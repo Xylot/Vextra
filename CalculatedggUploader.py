@@ -6,27 +6,9 @@ import os
 import time
 import enum
 import platform
+import ctypes.wintypes
+from tqdm import tqdm
 from stat import S_ISREG, ST_CTIME, ST_MODE
-from progressbar import AnimatedMarker, Bar, BouncingBar, Counter, ETA, \
-    AdaptiveETA, FileTransferSpeed, FormatLabel, Percentage, \
-    ProgressBar, ReverseBar, RotatingMarker, \
-    SimpleProgress, Timer, UnknownLength
-
-def assignPathFromOperatingSystem():
-	demoPathWindows = 'C:/Users/Joseph/Documents/My Games/Rocket League/TAGame/Demos/'
-	demoPathMac = '/Users/Joseph/Documents/CalculatedGG-Uploader/Test Files'
-	if platform.system() == 'Windows':
-		return demoPathWindows
-	elif platform.system() == 'Darwin':
-		return demoPathMac
-
-def clearScreen():
-	os.system('cls' if os.name == 'nt' else 'clear')
-
-demoPath = assignPathFromOperatingSystem()
-uploadURL = 'https://calculated.gg/api/upload'
-latestReplayName = ''
-
 
 class uploadState(enum.Enum):
 	setup = 1
@@ -46,57 +28,66 @@ class uploadStateDescriptions(enum.Enum):
 	uploadSuccessful = 'Replay successfully uploaded'
 	uploadUnsuccessful = 'Replay was not uploaded successfully'
 
-def updateCurrentState(state):
+def getUserDemoPath(platform):
+	if platform == 'win':
+		CSIDL_PERSONAL= 5
+		SHGFP_TYPE_CURRENT= 0
+		buf= ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
+		ctypes.windll.shell32.SHGetFolderPathW(0, CSIDL_PERSONAL, 0, SHGFP_TYPE_CURRENT, buf)
+		dPath = str(buf.value) + '\\My Games\\Rocket League\\TAGame\\Demos\\'
+		return dPath
+	elif platform == 'mac':
+		dPath = '~/Library/Application Support/Rocket League/TAGame/Demos'
+		return dPath
+
+def assignPathFromOperatingSystem():
+	if platform.system() == 'Windows':
+		return getUserDemoPath('win')
+	elif platform.system() == 'Darwin':
+		return getUserDemoPath('mac')
+
+def clearScreen():
+	os.system('cls' if os.name == 'nt' else 'clear')
+
+demoPath = assignPathFromOperatingSystem()
+uploadURL = 'https://calculated.gg/api/upload'
+latestReplayName = ''
+
+def updateCurrentState(state, status):
 	sys.stdout.write('\r')
 	sys.stdout.flush()
-	sys.stdout.write('Current Status: ' + str(state.name))
-
-#updateCurrentState(uploadState.setup)
+	if(state == uploadState.waitingForSuccessfulUpload):
+		sys.stdout.write('Current state: ' + str(state.name) + '  Parse status: ' + status)
+	else:
+		sys.stdout.write('Current state: ' + str(state.name) + ' ' * 40)
+	sys.stdout.flush()
 
 def main():
-	#updateCurrentState(uploadState.setup)
 	replayFileList = getReplayNames()
 	replayCount = len(replayFileList)
-	latestReplayName = replayFileList[0][1]
+	latestReplayName = ''
 	uploadCount = 0
 
 	clearScreen()
-	pbar = setupProgressBar(6)
 
-	#for file in pbar((file for file in range(5))):
-	for file in replayFileList[0:5]:
-	#for file in replayFileList:
-		#print(file)
-		
-		#updateCurrentState()
+	for file in tqdm(replayFileList, desc='Upload progress: ', total=replayCount):
 		openReplay = {
 			'replays': open(file[0], 'rb')
 		}
-		latestReplayName = str(file[1])
+		currentReplay = str(file[1])
 		print('\nLatest Replay Uploaded: ' + latestReplayName)
-		updateCurrentState(uploadState.openingFile)
+		updateCurrentState(uploadState.openingFile, '')
 		uploadReplay(uploadURL, openReplay)
-		uploadCount = uploadCount + 1
-		clearScreen()
-		pbar.update(uploadCount)
+		latestReplayName = currentReplay
 		time.sleep(2)
+		clearScreen()
 
-def setupProgressBar(replayCount):
-	widgets = ['Upload Progress: ', Percentage(), ' ', Bar(marker=RotatingMarker()),' ', ETA(), ' ', Counter()]
-	return ProgressBar(widgets=widgets, maxval=replayCount).start()
-
-def getLatestReplay():
-	return latestReplayName
+	print('Your replays have been successfully uploaded')
 
 def getReplayNames():
-	#Relative or absolute path to the directory
-	dir_path = demoPath
-
-	#all entries in the directory w/ stats
-	data = (os.path.join(dir_path, fn) for fn in os.listdir(dir_path))
+	data = (os.path.join(demoPath, fn) for fn in os.listdir(demoPath))
 	data = ((os.stat(path), path) for path in data)
 
-	# regular files, insert creation date
 	data = ((stat[ST_CTIME], path)
 				for stat, path in data if S_ISREG(stat[ST_MODE]))
 
@@ -105,10 +96,6 @@ def getReplayNames():
 	replayFileNames = []
 
 	for cdate, path in sorted(data):
-		#print(os.path.basename(path))
-		#print(time.ctime(cdate), os.path.basename(path))
-		replayFilesAbsPaths.append(os.path.abspath(path))
-		replayFileNames.append(os.path.basename(path))
 		replayAttributes.append([os.path.abspath(path), os.path.basename(path)])
 
 	for fileName in replayAttributes[0]:
@@ -121,57 +108,37 @@ def getReplayNames():
 
 	return replayAttributes
 
-	# for x in fileList:
-	# 	if "2018" in x[1]:
-	# 		timeList.append(x[0])# print(list(reversed(timeList)))
-
-	# timeListReverse = list(reversed(timeList))# print(onlyfiles)
-
-	# for x in timeListReverse:
-	# 	if ".replay" not in x:
-	# 		timeListReverse.remove(x)
-
-	# return timeListReverse
-
 def uploadReplay(uploadURL, replayFile):
-	#print('uploading...')
-	updateCurrentState(uploadState.uploadingFile)
+	updateCurrentState(uploadState.uploadingFile, '')
 	reply = requests.post(uploadURL, files = replayFile)
 
-	updateCurrentState(uploadState.interpretingReply)
+	updateCurrentState(uploadState.interpretingReply, '')
 	if not list(reply.json()):
 		message = 'No files uploaded, not a replay'
-		updateCurrentState(uploadState.uploadUnsuccessful)
+		updateCurrentState(uploadState.uploadUnsuccessful, '')
 
-	#if '202' in str(list(reply.json())[0]):
 	if reply.status_code == 202:
 		reply_id = list(reply.json())[0]
 		payload = {
 			'ids': reply_id
 		}
 		monitorUploadStatus(uploadURL, payload, 'SUCCESS')
-		# status = requests.get(up_url, params = payload)
-		# if list(status.json())[0] == 'FAILURE':
-		# 	message = 'No files uploaded: FAILURE'
-
-		# elif list(status.json())[0] in ['PENDING', 'STARTED', 'SUCCESS']:
-		# 	message = 'replays have been queued for parsing'
-		# 	waitForSuccess(status)# print(message)
-		# else :
-		# 	message = "Unknown status: " + list(status.json())[0]
 
 	else :
 		message = 'No files uploaded, error ' + reply.status_code
-		updateCurrentState(uploadState.uploadUnsuccessful)
+		updateCurrentState(uploadState.uploadUnsuccessful, '')
 
 def monitorUploadStatus(uploadURL, payload, statusCode):
-	updateCurrentState(uploadState.waitingForSuccessfulUpload)
 	while True:
 		status = requests.get(uploadURL, params = payload)
 		response = str(list(status.json())[0])
+		if response == 'FAILURE':
+			updateCurrentState(uploadState.uploadUnsuccessful, response)
+			time.sleep(5)
+
+		updateCurrentState(uploadState.waitingForSuccessfulUpload, response)
 		if checkForResponse(response, 'SUCCESS', 1):
-			updateCurrentState(uploadState.uploadSuccessful)
-			clearScreen()
+			updateCurrentState(uploadState.uploadSuccessful, '')
 			break
 
 def checkForResponse(status, waitCode, sleepAmount):
