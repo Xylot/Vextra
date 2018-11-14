@@ -6,11 +6,13 @@ import os
 import time
 import enum
 import platform
+import math
 import ctypes.wintypes
 from tqdm import tqdm
 from stat import S_ISREG, ST_CTIME, ST_MODE
 
 DELAY_AMOUNT = 10
+UPLOAD_BATCH_COUNT = 15
 
 class uploadState(enum.Enum):
 	setup = 1
@@ -72,14 +74,34 @@ def updateCurrentState(state, status):
 def main():
 	replayFileList = getReplayNames()
 	replayCount = len(replayFileList)
-	latestReplayName = ''
-	uploadCount = 0
-
 	arguments = str(sys.argv)
-
-
 	clearScreen()
+	batchUpload(replayFileList, replayCount)
+	print('Your replays have been successfully uploaded')
 
+def batchUpload(replayFileList, replayCount):
+	latestReplayName = ''
+	openReplays = {}
+	batchCount = 0
+	numberOfBatches = math.ceil(replayCount / UPLOAD_BATCH_COUNT)
+	for i in range(numberOfBatches):
+		for j in range(UPLOAD_BATCH_COUNT):
+			j = j + batchCount * 15
+			openReplays.update ({
+				'replays': open(replayFileList[j][0], 'rb')
+			})
+		print(openReplays)
+		currentReplay = str(replayFileList[i][1])
+		print('\nLatest Replay Uploaded: ' + latestReplayName)
+		updateCurrentState(uploadState.openingFile, '')
+		uploadReplay(uploadURL, openReplays)
+		latestReplayName = currentReplay
+		delayAfterUpload(DELAY_AMOUNT)
+		clearScreen()
+		batchCount = batchCount + 1
+		
+
+def singleUpload():
 	for file in tqdm(replayFileList, desc='Upload progress: ', total=replayCount):
 		openReplay = {
 			'replays': open(file[0], 'rb')
@@ -91,8 +113,6 @@ def main():
 		latestReplayName = currentReplay
 		delayAfterUpload(DELAY_AMOUNT)
 		clearScreen()
-
-	print('Your replays have been successfully uploaded')
 
 def getReplayNames():
 	data = (os.path.join(demoPath, fn) for fn in os.listdir(demoPath))
