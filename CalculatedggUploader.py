@@ -10,6 +10,8 @@ import ctypes.wintypes
 from tqdm import tqdm
 from stat import S_ISREG, ST_CTIME, ST_MODE
 
+DELAY_AMOUNT = 10
+
 class uploadState(enum.Enum):
 	setup = 1
 	openingFile = 2
@@ -18,6 +20,7 @@ class uploadState(enum.Enum):
 	waitingForSuccessfulUpload = 5
 	uploadSuccessful = 6
 	uploadUnsuccessful = 7
+	queueOverloadDelay = 8
 
 class uploadStateDescriptions(enum.Enum):
 	setup = 'Initializing'
@@ -27,8 +30,12 @@ class uploadStateDescriptions(enum.Enum):
 	waitingForSuccessfulUpload = 'Waiting for replay to be parsed'
 	uploadSuccessful = 'Replay successfully uploaded'
 	uploadUnsuccessful = 'Replay was not uploaded successfully'
+	queueOverloadDelay = 'Delaying the next upload to not overload the queue'
 
 def getUserDemoPath(platform):
+	if sys.argv[1]:
+		return sys.argv[1]
+
 	if platform == 'win':
 		CSIDL_PERSONAL= 5
 		SHGFP_TYPE_CURRENT= 0
@@ -68,6 +75,9 @@ def main():
 	latestReplayName = ''
 	uploadCount = 0
 
+	arguments = str(sys.argv)
+
+
 	clearScreen()
 
 	for file in tqdm(replayFileList, desc='Upload progress: ', total=replayCount):
@@ -79,7 +89,7 @@ def main():
 		updateCurrentState(uploadState.openingFile, '')
 		uploadReplay(uploadURL, openReplay)
 		latestReplayName = currentReplay
-		time.sleep(2)
+		delayAfterUpload(DELAY_AMOUNT)
 		clearScreen()
 
 	print('Your replays have been successfully uploaded')
@@ -137,7 +147,7 @@ def monitorUploadStatus(uploadURL, payload, statusCode):
 			time.sleep(5)
 
 		updateCurrentState(uploadState.waitingForSuccessfulUpload, response)
-		if checkForResponse(response, 'SUCCESS', 1):
+		if checkForResponse(response, 'SUCCESS', 3):
 			updateCurrentState(uploadState.uploadSuccessful, '')
 			break
 
@@ -145,8 +155,13 @@ def checkForResponse(status, waitCode, sleepAmount):
 	if status == waitCode:
 		return True
 	else:
-		time.sleep(5)
+		time.sleep(sleepAmount)
 		return False
+
+def delayAfterUpload(delay):
+	updateCurrentState(uploadState.queueOverloadDelay, '')
+	time.sleep(delay)
+
 
 if __name__ == '__main__':
 	main()
