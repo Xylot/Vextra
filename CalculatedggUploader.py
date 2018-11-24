@@ -33,16 +33,21 @@ class UpdateStatus:
 		uploadSuccessful = 9
 		uploadUnsuccessful = 10
 		queueOverloadDelay = 11
+		uploadTimeout = 12
 
 	class UploadStateDescriptions(enum.Enum):
 		setup = 'Initializing'
 		openingFile = 'Opening file'
+		openingBatch = 'Opening the batch of files'
 		uploadingFile = 'Uploading file'
+		uploadingBatch = 'Uploading the batch of files'
 		interpretingReply = 'Interpreting reply'
+		interpretingReplies = 'Interpeties replies of the batch upload'
 		waitingForSuccessfulUpload = 'Waiting for replay to be parsed'
 		uploadSuccessful = 'Replay successfully uploaded'
 		uploadUnsuccessful = 'Replay was not uploaded successfully'
 		queueOverloadDelay = 'Delaying the next upload to not overload the queue'
+		uploadTimeout = 'Replay parsing has taken too long'
 
 	def clearScreen(self):
 		os.system('cls' if os.name == 'nt' else 'clear')
@@ -168,10 +173,14 @@ class BatchUpload:
 
 	def monitorBatchStatus(self, payloads):
 		self.statusUpdater.update(self.statusUpdater.UploadState.waitingForSuccessfulUpload, '')
+		startTime = time.time()
 		while True:
 			uploadStatus = self.getUploadBatchStatus(payloads)
 			if self.checkForBatchResponse(uploadStatus, 'SUCCESS'):
 				self.statusUpdater.update(self.statusUpdater.UploadState.uploadSuccessful, '')
+				break
+			if checkForTimeout(startTime):
+				self.statusUpdater.update(self.statusUpdater.UploadState.uploadTimeout, '')
 				break
 			time.sleep(10)
 
@@ -192,6 +201,9 @@ class BatchUpload:
 	def delayAfterUpload(self, delay):
 		self.statusUpdater.update(self.statusUpdater.UploadState.queueOverloadDelay, '')
 		time.sleep(delay)
+
+	def checkForTimeout(self, oldEpoch):
+		return time.time() - oldEpoch >= 60
 
 class SingleUpload:
 	
