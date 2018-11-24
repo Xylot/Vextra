@@ -179,7 +179,7 @@ class BatchUpload:
 			if self.checkForBatchResponse(uploadStatus, 'SUCCESS'):
 				self.statusUpdater.update(self.statusUpdater.UploadState.uploadSuccessful, '')
 				break
-			if checkForTimeout(startTime):
+			if self.checkForTimeout(startTime):
 				self.statusUpdater.update(self.statusUpdater.UploadState.uploadTimeout, '')
 				break
 			time.sleep(10)
