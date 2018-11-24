@@ -7,7 +7,9 @@ import time
 import enum
 import platform
 import math
-import ctypes.wintypes
+import carball
+from carball.json_parser.game import Game
+#import ctypes.wintypes
 from tqdm import tqdm
 from stat import S_ISREG, ST_CTIME, ST_MODE
 
@@ -82,11 +84,13 @@ class Replays:
 			dPath = str(buf.value) + '\\My Games\\Rocket League\\TAGame\\Demos\\'
 			return dPath
 		elif platform == 'mac':
-			dPath = '~/Library/Application Support/Rocket League/TAGame/Demos'
+			#dPath = '~/Library/Application Support/Rocket League/TAGame/Demos'
+			dPath = '/Users/Joseph/Documents/GitHub/CalculatedGG-Uploader/Test Files/Replays'
 			return dPath
 
 	def assignPathFromOperatingSystem(self):
 		if platform.system() == 'Windows':
+			import ctypes.wintypes
 			return self.getUserDemoPath('win')
 		elif platform.system() == 'Darwin':
 			return self.getUserDemoPath('mac')
@@ -124,6 +128,7 @@ class BatchUpload:
 		self.statusUpdater = UpdateStatus()
 		self.uploadURL = 'https://calculated.gg/api/upload'
 		self.statusUpdater.clearScreen()
+		#self.g = self.getBatchGUIDs(self.replayBatches[0])
 
 	def getReplayCount(self):
 		return len(self.replayList)
@@ -144,6 +149,16 @@ class BatchUpload:
 			currentBatchList.clear()
 
 		return batches
+
+	def getBatchGUIDs(self, batch):
+		guids = []
+		guidList = []
+		for i in range(len(batch)):
+			decompiler = DecompileReplay(batch[i])
+			guid = decompiler.getReplayGUID()
+			print(guid)
+			guidList.append(guid)
+		print(guidList)
 
 	def upload(self):
 		for i in tqdm(range(self.batchCount), desc='Upload progress: ', position=0):
@@ -169,6 +184,7 @@ class BatchUpload:
 				'ids': reply_id
 			}
 			fullPayload = [replayName, payload]
+			print(fullPayload)
 			return fullPayload
 
 	def monitorBatchStatus(self, payloads):
@@ -261,6 +277,27 @@ class SingleUpload:
 		else:
 			time.sleep(sleepAmount)
 			return False
+
+class DecompileReplay:
+
+	def __init__(self, replay):
+		self.replayPath = replay[0]
+		self.replayName = replay[1]
+		self.replayPathJson = self.getReplayJson()		
+
+	def getReplayJson(self):
+		replayJson = self.replayPath.replace('.replay', '.json')
+		replayJson = replayJson.replace('/Replays', '/Decompiled Replays/')
+		return replayJson
+
+	def getReplayGUID(self):
+		startTime = time.time()
+		_json = carball.decompile_replay(self.replayPath, self.replayPathJson, overwrite=True)
+		decTime = time.time() - startTime
+		print('Decompile time: ' + str(decTime))
+		game = Game()
+		game.initialize(loaded_json=_json)
+		return game.game_info.match_guid
 
 def main():
 	replays = Replays()
