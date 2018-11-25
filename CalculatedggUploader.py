@@ -124,10 +124,15 @@ class Replays:
 			filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			filewriter.writerow(['Replay Name', 'Replay GUID', 'Replay Path', 'JSON Path'])
 			for i in range(len(self.replayFileList)):
-				decompiler = DecompileReplay(self.replayFileList[i])
-				row = [decompiler.replayName, decompiler.getReplayGUID(), decompiler.replayPath, decompiler.replayPathJson]
-				filewriter.writerow(row)
-				print('Wrote to file: ' + str(row))
+				try:
+					decompiler = DecompileReplay(self.replayFileList[i])
+					row = [decompiler.replayName, decompiler.getReplayGUID(), decompiler.replayPath, decompiler.replayPathJson]
+					filewriter.writerow(row)
+					print('Wrote to file: ' + str(row))
+					os.remove(decompiler.replayPathJson)
+					print('Deleted json: ' + decompiler.replayPathJson)
+				except:
+					print('Unable to decompile: ' + replayFileList[i][1])
 
 class BatchUpload:
 	
