@@ -9,6 +9,7 @@ import platform
 import math
 import carball
 import csv
+import pandas as pd
 from carball.json_parser.game import Game
 import ctypes.wintypes
 from tqdm import tqdm
@@ -72,7 +73,8 @@ class Replays:
 	
 	def __init__(self):
 		self.replayPath = self.assignPathFromOperatingSystem()
-		self.replayFileList = self.getReplayNames(self.replayPath)		
+		self.replayFileList = self.getReplayNames(self.replayPath)
+		self.csvArray = self.generateArrayFromCSV()	
 
 	def getUserDemoPath(self, platform):
 		if len(sys.argv) > 2:
@@ -120,19 +122,41 @@ class Replays:
 		return replayAttributes
 
 	def generateGUIDcsv(self):
-		with open('ReplayGuids.csv', 'w') as csvfile:
-			filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+		with open('ReplayGuidsTest1.csv', 'a') as csvfile:
+			filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
 			filewriter.writerow(['Replay Name', 'Replay GUID', 'Replay Path', 'JSON Path'])
 			for i in range(len(self.replayFileList)):
-				try:
-					decompiler = DecompileReplay(self.replayFileList[i])
-					row = [decompiler.replayName, decompiler.getReplayGUID(), decompiler.replayPath, decompiler.replayPathJson]
-					filewriter.writerow(row)
-					print('Wrote to file: ' + str(row))
-					os.remove(decompiler.replayPathJson)
-					print('Deleted json: ' + decompiler.replayPathJson)
-				except:
-					print('Unable to decompile: ' + replayFileList[i][1])
+				if not self.checkForPreviousDecompile(self.replayFileList[i][1]):
+					try:
+						decompiler = DecompileReplay(self.replayFileList[i])
+						row = [decompiler.replayName, decompiler.getReplayGUID(), decompiler.replayPath, decompiler.replayPathJson]
+						filewriter.writerow(row)
+						print('Wrote to file: ' + str(row))
+						os.remove(decompiler.replayPathJson)
+						print('Deleted json: ' + decompiler.replayPathJson)
+					except:
+						print('Unable to decompile: ' + replayFileList[i][1])
+				else:
+					print('Replay ' + self.replayFileList[i][1] + ' has already been decompilied')
+
+	def generateArrayFromCSV(self):
+		results = []
+		with open("ReplayGuidsTest1.csv") as csvfile:
+			reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+			for row in reader:
+				results.append(row)
+		return results
+
+	def removeEmptyRows(self):
+		df = pd.read_csv('ReplayGuidsTest.csv')
+		df.to_csv('ReplayGuidsTest1.csv', index=False)
+
+	def checkForPreviousDecompile(self, replayName):
+		for i in range(len(self.csvArray)):
+			if replayName in self.csvArray[i]:
+				print(self.csvArray[i])
+				return True
+		return False
 
 class BatchUpload:
 	
