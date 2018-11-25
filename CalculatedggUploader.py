@@ -135,7 +135,7 @@ class Replays:
 						os.remove(decompiler.replayPathJson)
 						print('Deleted json: ' + decompiler.replayPathJson)
 					except:
-						print('Unable to decompile: ' + replayFileList[i][1])
+						print('Unable to decompile: ' + self.replayFileList[i][1])
 				else:
 					print('Replay ' + self.replayFileList[i][1] + ' has already been decompilied')
 
