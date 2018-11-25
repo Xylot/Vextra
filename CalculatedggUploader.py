@@ -8,8 +8,9 @@ import enum
 import platform
 import math
 import carball
+import csv
 from carball.json_parser.game import Game
-#import ctypes.wintypes
+import ctypes.wintypes
 from tqdm import tqdm
 from stat import S_ISREG, ST_CTIME, ST_MODE
 
@@ -68,6 +69,7 @@ class UpdateStatus:
 		sys.stdout.flush()
 
 class Replays:
+	
 	def __init__(self):
 		self.replayPath = self.assignPathFromOperatingSystem()
 		self.replayFileList = self.getReplayNames(self.replayPath)		
@@ -117,6 +119,16 @@ class Replays:
 
 		return replayAttributes
 
+	def generateGUIDcsv(self):
+		with open('ReplayGuids.csv', 'w') as csvfile:
+			filewriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+			filewriter.writerow(['Replay Name', 'Replay GUID', 'Replay Path', 'JSON Path'])
+			for i in range(len(self.replayFileList)):
+				decompiler = DecompileReplay(self.replayFileList[i])
+				row = [decompiler.replayName, decompiler.getReplayGUID(), decompiler.replayPath, decompiler.replayPathJson]
+				filewriter.writerow(row)
+				print('Wrote to file: ' + str(row))
+
 class BatchUpload:
 	
 	def __init__(self, replayList, batchAmount):
@@ -151,12 +163,10 @@ class BatchUpload:
 		return batches
 
 	def getBatchGUIDs(self, batch):
-		guids = []
 		guidList = []
 		for i in range(len(batch)):
 			decompiler = DecompileReplay(batch[i])
 			guid = decompiler.getReplayGUID()
-			print(guid)
 			guidList.append(guid)
 		print(guidList)
 
@@ -301,6 +311,7 @@ class DecompileReplay:
 
 def main():
 	replays = Replays()
+	#replays.generateGUIDcsv()
 	batchUploader = BatchUpload(replays.replayFileList, UPLOAD_BATCH_COUNT)
 	batchUploader.upload()
 	print('Your replays have been successfully uploaded')
