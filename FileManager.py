@@ -93,7 +93,8 @@ class FileManager:
 	def importReplayDatabase(self, userDefinedDatabase=None):
 		try:
 			if userDefinedDatabase is None:
-				self.importedDatabase = self.databaseManager.read('ReplayDB.csv')
+				self.importedDatabase = self.databaseManager.createEmptyDataframe()
+				#self.importedDatabase = self.databaseManager.read('ReplayDB.csv')
 			else:
 				if os.path.isfile(userDefinedDatabase):
 					self.importedDatabase = self.databaseManager.read(userDefinedDatabase)
