@@ -1,9 +1,11 @@
-# CalculatedGG Uploader
+# Vextra
+
+Vextra is a CLI Rocket League replay uploader to Calculated.gg. Vextra supports basic replay uploads from the default or specified replay folder, GUID utilization to prevent uploading duplicate replays to the server, and various other tools to faciliate replay uploading.
 
 ## Requirements
 
 - Python 3.6+
-- Windows, Mac or Linux
+- Windows or Mac
 
 ## Interface
 
@@ -15,7 +17,7 @@
 
 ## Replay Database
 
-The database is a csv file with 3 values: replay name, replay GUID, and replay path. The GUID is the unique identifier of the replay and is used by the uploader to determine if the replay already exists in the Calculated.gg database.
+The database is a csv file with 3 values: replay name, replay GUID, and replay path. The GUID is the unique identifier of the replay and is used by the uploader to determine if the replay already exists in the Calculated.gg database. The replays are parsed using two different methods: [Rattletrap](https://github.com/tfausak/rattletrap)/[Carball](https://github.com/SaltieRL/carball), and [Boxcars](https://github.com/nickbabcock/boxcars). Rattletrap and carball allow for a complete analysis of each replay and boxcars is utilized for its speed in parsing the GUID of the replay file.
 
 Note that replays pre season 6 will not parse correctly and therefore will not have a readable GUID. So, those replays will be automatically uploaded to the server.
 
