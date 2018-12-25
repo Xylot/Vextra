@@ -1,7 +1,9 @@
+import json
 from pprint import pprint
-from Parser import Decompiler, Parser
+from Parser import Decompiler, ParseFull, ParseHeader
 from FileManager import FileManager
 from DatabaseManager import DatabaseManager, CSVManager
+from ReplayDatabaseManager import ReplayDatabaseManager
 
 class FileManagerTest:
 	def __init__(self):
@@ -37,6 +39,7 @@ class UploaderTest:
 
 class ReplayDatabaseManagerTest:
 	def __init__(self):
+		self.exportHeaders()
 		pass
 
 	def test(self):
@@ -47,6 +50,12 @@ class ReplayDatabaseManagerTest:
 		#manager.exportReplayDatabase()
 		#manager.importReplayDatabase()
 		pass
+
+	def exportHeaders(self):
+		fmanager = FileManager()
+		demoPathAttributes = fmanager.getAttributes()
+		rmanager = ReplayDatabaseManager(demoPathAttributes)
+		rmanager.getBatchHeaders()
 
 	def testDecompileTime(self):
 		startTime = time.time()
@@ -112,22 +121,41 @@ class DatabaseManagerTest:
 class ParserTest:
 
 	def __init__(self):
-		self.replayPath = "C:/Users/Joseph/Documents/GitHub/CalculatedGG-Uploader/Refactor/TestFiles/Replays/Set of 5/0F84A75D45E7EB7F8D174E89F9AF530F.replay"
+		self.replayPath = "C:/Users/Joseph/Documents/GitHub/Vextra/TestFiles/Replays/Set of 100/9058036243440939A62D4A91DAE72D35.replay"
+		#self.replayPath = "C:/Users/Joseph/Documents/GitHub/Vextra/TestFiles/Replays/Set of 100/DFFE296847EFE13FD1AB1587B64C59DE.replay"
 		self.logDecompileTime = False
 		self.testDecompile()
-		self.getGUID()
+		#self.getGUID()
+		self.getBasicData()
+		self.dataJson = self.dictToJson(self.basicData)
 		self.printAttributes()
+		self.outputJSON(self.dataJson)
 
 	def testDecompile(self):
-		self.jsonObject = Decompiler(self.replayPath).decompile(logTime=self.logDecompileTime)
+		self.jsonObject = Decompiler(self.replayPath).decompile(logTime=self.logDecompileTime, onlyHeader=True)
 
 	def getGUID(self):
-		self.guid = Parser(self.jsonObject, 'boxcars').getGUID()
+		self.guid = ParseFull(self.jsonObject, 'boxcars').getGUID()
+
+	def getBasicData(self):
+		self.basicData = ParseHeader(self.jsonObject).getHeaderData()
+
+	def dictToJson(self, dictData):
+		data = json.dumps(dictData)
+		loadedData = json.loads(data)
+		return loadedData
 
 	def printAttributes(self):
-		pprint('GUID: ' + self.guid)
+		#pprint('GUID: ' + self.guid)
+		pprint(self.basicData)
 
-# #parserTest = ParserTest()
+	def outputJSON(self, jsonObject):
+		with open('data.json', 'w') as outfile:
+		    json.dump(jsonObject, outfile, indent=4, separators=(',', ': '), sort_keys=True)
+
+
+#parserTest = ParserTest()
+rTest = ReplayDatabaseManagerTest()
 # databaseManager = DatabaseManagerTest()
 # db = databaseManager.importDatabase('C:/Users/Joseph/Documents/GitHub/CalculatedGG-Uploader/Refactor/Complete (With Duplicates).csv')
 # #db_drop = databaseManager.dropTest('index', db)
@@ -140,5 +168,5 @@ class ParserTest:
 # # tbt_drop = databaseManager.dropTest('JSON', tbt)
 # # databaseManager.exportDatabase(data=tbt_drop, header=list(tbt), filePath='tbt.csv', createBackup=False)
 
-databaseManager = DatabaseManagerTest()
-databaseManager.databaseTester()
+# databaseManager = DatabaseManagerTest()
+# databaseManager.databaseTester()

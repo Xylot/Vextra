@@ -14,7 +14,7 @@ from DatabaseManager import DatabaseManager
 
 class FileManager:
 
-	def __init__(self, args, batchAmount=15):
+	def __init__(self, args=[None, None, None], batchAmount=15):
 		self.setAttributes(args, batchAmount)
 
 	def setAttributes(self, args, batchAmount):

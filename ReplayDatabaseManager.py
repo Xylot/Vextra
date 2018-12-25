@@ -1,4 +1,5 @@
-from Parser import Decompiler, Parser
+import json
+from Parser import Decompiler, ParseFull, ParseHeader
 from DatabaseManager import DatabaseManager
 from pprint import pprint
 from tqdm import tqdm
@@ -21,7 +22,7 @@ class ReplayDatabaseManager:
 	def getReplayGUID(self, replay, parser):
 		try:
 			jsonObject = Decompiler(replay).decompile(parser=parser, logTime=False)
-			guid = Parser(jsonObject, parser).getGUID()
+			guid = ParseFull(jsonObject, parser).getGUID()
 			if any(guid): return guid 
 			else: return 'None'
 		except:
@@ -31,6 +32,21 @@ class ReplayDatabaseManager:
 		for replay in batch:
 			replay[2] = self.getReplayGUID(replay[0], 'boxcars')
 		return batch
+
+	def getReplayHeader(self, replay, parser):
+		jsonObject = Decompiler(replay).decompile(parser=parser, logTime=False)
+		header = ParseHeader(jsonObject).getHeaderData()
+		if any(header): return header 
+		else: return 'None'
+		pass
+
+	def getBatchHeaders(self):
+		for batch in self.replayBatches:
+			for replay in batch:
+				header = self.getReplayHeader(replay[0], 'boxcars')
+				headerjson = self.dictToJson(header)
+				self.outputJSON(headerjson)
+		pass
 
 	def printAllGUIDs(self):
 		for batch in self.replayBatches:
@@ -60,4 +76,15 @@ class ReplayDatabaseManager:
 
 	
 		#pprint(self.importedDatabase)
+
+	def dictToJson(self, dictData):
+		data = json.dumps(dictData)
+		loadedData = json.loads(data)
+		return loadedData
+
+	def outputJSON(self, jsonObject):
+		with open('data.json', 'a') as outfile:
+		    json.dump(jsonObject, outfile, indent=4, separators=(',', ': '), sort_keys=True)
+
+    
 
