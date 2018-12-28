@@ -13,6 +13,7 @@ class ReplayDatabaseManager:
 		self.databaseManager = DatabaseManager()
 		self.demoPathAttributes = attributes
 		self.setAttributes()
+		self.replayDict = {}
 		
 	def setAttributes(self):
 		self.replayList = self.demoPathAttributes[1]
@@ -44,9 +45,14 @@ class ReplayDatabaseManager:
 		for batch in self.replayBatches:
 			for replay in batch:
 				header = self.getReplayHeader(replay[0], 'boxcars')
-				headerjson = self.dictToJson(header)
-				self.outputJSON(headerjson)
-		pass
+				replayName = self.sanitizeReplayName(replay[1])
+				self.replayDict[replayName] = header
+		
+		headerjson = self.dictToJson(self.replayDict)
+		self.outputJSON(headerjson)
+
+	def sanitizeReplayName(self, replayName):
+		return replayName.replace('.replay', '')
 
 	def printAllGUIDs(self):
 		for batch in self.replayBatches:
@@ -83,7 +89,7 @@ class ReplayDatabaseManager:
 		return loadedData
 
 	def outputJSON(self, jsonObject):
-		with open('data.json', 'a') as outfile:
+		with open('data.json', 'w') as outfile:
 		    json.dump(jsonObject, outfile, indent=4, separators=(',', ': '), sort_keys=True)
 
     
