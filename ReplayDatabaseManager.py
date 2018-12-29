@@ -1,3 +1,4 @@
+import os
 import json
 from Parser import Decompiler, ParseFull, ParseHeader
 from DatabaseManager import DatabaseManager
@@ -42,11 +43,16 @@ class ReplayDatabaseManager:
 		pass
 
 	def getBatchHeaders(self):
-		for batch in self.replayBatches:
-			for replay in batch:
-				header = self.getReplayHeader(replay[0], 'boxcars')
-				replayName = self.sanitizeReplayName(replay[1])
-				self.replayDict[replayName] = header
+		for batch in tqdm(self.replayBatches, desc='Export progress: ', position=0):
+			for replay in tqdm(batch, desc='	Batch progress: ', ncols=100, position=1):
+				if os.path.getsize(replay[0]) > 30000:
+					try:
+						header = self.getReplayHeader(replay[0], 'boxcars')
+						replayName = self.sanitizeReplayName(replay[1])
+						self.replayDict[replayName] = header
+					except:
+						replayName = self.sanitizeReplayName(replay[1])
+						self.replayDict["Error"] = {replayName:'Error'}
 		
 		headerjson = self.dictToJson(self.replayDict)
 		self.outputJSON(headerjson)
@@ -89,7 +95,7 @@ class ReplayDatabaseManager:
 		return loadedData
 
 	def outputJSON(self, jsonObject):
-		with open('data.json', 'w') as outfile:
+		with open('Resources/data2.json', 'w') as outfile:
 		    json.dump(jsonObject, outfile, indent=4, separators=(',', ': '), sort_keys=True)
 
     

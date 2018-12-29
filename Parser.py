@@ -77,10 +77,12 @@ class ParseFull:
 		        for x in self.findkeys(j, kv):
 		            yield x
 
+# Parse the json object and return important header information
 class ParseHeader:
 
 	def __init__(self, jsonObject):
 		self.jsonObject = jsonObject['properties']
+		self.mapDict = self.getMapDict()
 		self.setHeaderData()
 		self.getHeaderData()
 
@@ -94,10 +96,11 @@ class ParseHeader:
 		self.map = self.getValue('MapName')
 		self.matchType = self.getValue('MatchType')
 		self.user = self.getValue('PlayerName')
-		self.goalsOrange = self.getValue('Team0Score')
+		self.goalsOrange = self.getValue('Team0Score')	
 		self.goalsBlue = self.getValue('Team1Score')
 		self.teamSize = self.getValue('TeamSize')
 		self.players = self.getValue('PlayerStats')
+		self.replayName = self.getValue('ReplayName')
 
 	def getHeaderData(self):
 		self.data = {
@@ -107,15 +110,42 @@ class ParseHeader:
 			'Game_Version': self.gameVersion,
 			'Replay_Version': self.replayVersion,
 			'ID': self.ID,
-			'Map': self.map,
+			'Replay_Name': self.replayName,
+			'Map': self.getMapName(self.map),
 			'Match_Type': self.matchType,
-			'Team_Size': self.teamSize,
-			'Goals_Orange': self.goalsOrange,
-			'Goals_Blue': self.goalsBlue,
+			'Team_Size': self.getTeamType(self.teamSize),
+			'Goals_Orange': self.getGoalCount(self.goalsOrange),
+			'Goals_Blue': self.getGoalCount(self.goalsBlue),
 			'User': self.user,
 			'Players': self.players
 		}
 		return self.data
+
+	def getMapDict(self):
+		with open('Resources/MapDatabase.json') as f:
+			_json = json.load(f)
+		return _json
+
+	def getMapName(self, mapValue):
+		return self.mapDict.get(mapValue)
+
+	def getTeamType(self, teamSize):
+		if teamSize == 1:
+			return '1v1'
+		elif teamSize == 2:
+			return '2v2'
+		elif teamSize == 3:
+			return '3v3'
+		elif teamSize == 4:
+			return '4v4'
+		else:
+			return 'Error'
+
+	def getGoalCount(self, goals):
+		if goals == None:
+			return 0;
+		else:
+			return goals
 
 	def getValue(self, value):
 		kvGen = self.findkeys(self.jsonObject, value)
