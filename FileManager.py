@@ -18,8 +18,7 @@ class FileManager:
 		self.setAttributes(args, batchAmount)
 
 	def setAttributes(self, args, batchAmount):
-		#self.replayPath = self.getUserDemoPath(args[0])
-		self.replayPath = 'C:/Users/Joseph/Documents/My Games/Rocket League/TAGame/Demos/Demos/October - December 15th'
+		self.replayPath = self.getUserDemoPath(args[0])
 		self.replayList = self.getReplayList()
 		self.replayCount = self.getReplayCount()
 		self.replayFolderName = self.getReplayFolderName()
