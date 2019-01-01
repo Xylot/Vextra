@@ -1,6 +1,9 @@
 import platform
 import sys
-import ctypes.wintypes
+try:
+  import ctypes.wintypes
+except:
+  pass
 import os
 import math
 import time
@@ -50,8 +53,8 @@ class FileManager:
 			dPath = str(buf.value) + '\\My Games\\Rocket League\\TAGame\\Demos'
 			return dPath
 		elif platform.system() == 'Darwin':
-			#dPath = '~/Library/Application Support/Rocket League/TAGame/Demos'
-			dPath = '/Users/Joseph/Documents/GitHub/CalculatedGG-Uploader/Test Files/Replays'
+			dPath = '/Library/Application Support/Rocket League/TAGame/Demos'
+			#dPath = '/Users/Joseph/Documents/GitHub/CalculatedGG-Uploader/Test Files/Replays'
 			return dPath	
 
 	def getReplayFolderName(self):
